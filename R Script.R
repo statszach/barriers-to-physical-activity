@@ -145,9 +145,6 @@ M2(IRT.URI.GRM)
 
 coef(IRT.URI.GRM)
 
-plot(IRT.URI.GRM, type = "rxx") #reliability = 0.8 at theta = 0
-
-
 IRT.MTurk.GRM <- mirt(IRT.MTurk.BPAOnly, mirt.model, itemtype = "graded")
 
 summary(IRT.MTurk.GRM)
@@ -156,4 +153,36 @@ M2(IRT.MTurk.GRM)
 
 coef(IRT.MTurk.GRM)
 
-plot(IRT.MTurk.GRM, type = "rxx") #reliability = 0.8 at theta = 0
+## DIF ##
+
+IRT.MTurk.BPADif <- IRT.MTurk.BPAOnly 
+IRT.URI.BPADif <- IRT.URI.BPAOnly 
+
+IRT.DIF <- rbind(IRT.MTurk.BPADif, IRT.URI.BPADif)
+
+group <- c(rep('MT', 363), rep('URI', 523))
+
+DIF <- multipleGroup(IRT.DIF, mirt.model, group = group)
+
+M2(DIF)
+
+coef(DIF)
+
+DIF(DIF, c('d1', 'd2', 'd3', 'd4'))
+
+#           AIC    AICc   SABIC      HQ    BIC     X2 df     p
+# BPA1  -15.327 -12.323  -8.884  -8.008  3.819 23.327  4 0.000
+# BPA2  -13.465 -10.460  -7.021  -6.145  5.682 21.465  4 0.000
+# BPA3    6.387   9.392  12.831  13.707 25.534  1.613  4 0.806
+# BPA4   -1.681   1.324   4.763   5.639 17.466  9.681  4 0.046
+# BPA5    0.650   3.655   7.094   7.970 19.797  7.350  4 0.119
+# BPA6    7.666  10.671  14.110  14.986 26.813  0.334  4 0.988
+# BPA7    4.468   7.473  10.912  11.788 23.615  3.532  4 0.473
+# BPA8   -5.689  -2.685   0.754   1.630 13.458 13.689  4 0.008
+# BPA9    4.575   7.580  11.019  11.895 23.722  3.425  4 0.489
+# BPA10 -21.194 -18.189 -14.750 -13.874 -2.047 29.194  4 0.000
+# BPA11   4.525   7.529  10.968  11.845 23.672  3.475  4 0.482
+# BPA12   3.433   6.438   9.877  10.753 22.580  4.567  4 0.335
+# BPA13   3.744   6.749  10.188  11.064 22.891  4.256  4 0.372
+
+DIF(DIF, which.par = c('a2'), items2test = 1:13)
