@@ -127,9 +127,13 @@ fa(PCA.MTurk.BPAonly, nfactors = 2, rotate = "Promax", fm = "wls")
 ## Step Seven: IRT ##
 #####################
 
-mirt.model <- 'F1 = 1-6, 8, 10, 11
-               F2 = 7, 9, 12, 13
-               COV = F1*F2'
+uri.model <-  'F1 = 2, 3, 4, 5, 6, 8, 10, 12
+               F2 = 1, 7, 9, 11, 13
+              COV = F1*F2'
+
+mturk.model <- 'F1 = 7, 8, 9, 11, 12, 13
+                F2 = 1, 2, 3, 4, 5, 6, 10
+                COV = F1*F2'
 
 IRT.URI.BPAOnly <- IRT.URI %>% select(BPA1, BPA2, BPA3, BPA4, BPA5, BPA6, BPA7, BPA8, BPA9, BPA10, BPA11,
                                       BPA12, BPA13)
@@ -137,7 +141,7 @@ IRT.URI.BPAOnly <- IRT.URI %>% select(BPA1, BPA2, BPA3, BPA4, BPA5, BPA6, BPA7, 
 IRT.MTurk.BPAOnly <- IRT.MTurk %>% select(BPA1, BPA2, BPA3, BPA4, BPA5, BPA6, BPA7, BPA8, BPA9, BPA10, BPA11,
                                       BPA12, BPA13)
 
-IRT.URI.GRM <- mirt(IRT.URI.BPAOnly, mirt.model, itemtype = "graded")
+IRT.URI.GRM <- mirt(IRT.URI.BPAOnly, uri.model, itemtype = "graded")
 
 summary(IRT.URI.GRM)
 
@@ -145,7 +149,7 @@ M2(IRT.URI.GRM)
 
 coef(IRT.URI.GRM)
 
-IRT.MTurk.GRM <- mirt(IRT.MTurk.BPAOnly, mirt.model, itemtype = "graded")
+IRT.MTurk.GRM <- mirt(IRT.MTurk.BPAOnly, mturk.model, itemtype = "graded")
 
 summary(IRT.MTurk.GRM)
 
@@ -153,36 +157,27 @@ M2(IRT.MTurk.GRM)
 
 coef(IRT.MTurk.GRM)
 
-## DIF ##
+##########################################
+## Step Eight: Reliability and Validity ##
+##########################################
 
-IRT.MTurk.BPADif <- IRT.MTurk.BPAOnly 
-IRT.URI.BPADif <- IRT.URI.BPAOnly 
+URI_Rel <- URI_Sample %>% select(BPA1, BPA2, BPA3, BPA4, BPA5, BPA6, BPA7, BPA8, BPA9, BPA10, BPA11,
+                                 BPA12, BPA13)
+MTurk_Rel <- MTurk_Sample %>% select(BPA1, BPA2, BPA3, BPA4, BPA5, BPA6, BPA7, BPA8, BPA9, BPA10, BPA11,
+                                     BPA12, BPA13)
 
-IRT.DIF <- rbind(IRT.MTurk.BPADif, IRT.URI.BPADif)
+omega(URI_Rel) #omega = 0.87
 
-group <- c(rep('MT', 363), rep('URI', 523))
+omega(MTurk_Rel) #omega = 0.84
 
-DIF <- multipleGroup(IRT.DIF, mirt.model, group = group)
+ValidityData <- ValidityData %>% mutate(BPA_Sum = sum(BPA1, BPA2, BPA3, BPA4, BPA5, BPA6, BPA7, BPA8, BPA9, BPA10, BPA11,
+                                               BPA12, BPA13),
+                                   GodinScored = GodinS*9 + GodinM*5 + GodinL*3)
 
-M2(DIF)
+URI_Val <- ValidityData %>% filter(URI1MTurk2 == 1)
 
-coef(DIF)
+cor.test(URI_Val$BPA_AVG, URI_Val$GodinScored)
 
-DIF(DIF, c('d1', 'd2', 'd3', 'd4'))
+MTurk_Val <- ValidityData %>% filter(URI1MTurk2 == 2)
 
-#           AIC    AICc   SABIC      HQ    BIC     X2 df     p
-# BPA1  -15.327 -12.323  -8.884  -8.008  3.819 23.327  4 0.000
-# BPA2  -13.465 -10.460  -7.021  -6.145  5.682 21.465  4 0.000
-# BPA3    6.387   9.392  12.831  13.707 25.534  1.613  4 0.806
-# BPA4   -1.681   1.324   4.763   5.639 17.466  9.681  4 0.046
-# BPA5    0.650   3.655   7.094   7.970 19.797  7.350  4 0.119
-# BPA6    7.666  10.671  14.110  14.986 26.813  0.334  4 0.988
-# BPA7    4.468   7.473  10.912  11.788 23.615  3.532  4 0.473
-# BPA8   -5.689  -2.685   0.754   1.630 13.458 13.689  4 0.008
-# BPA9    4.575   7.580  11.019  11.895 23.722  3.425  4 0.489
-# BPA10 -21.194 -18.189 -14.750 -13.874 -2.047 29.194  4 0.000
-# BPA11   4.525   7.529  10.968  11.845 23.672  3.475  4 0.482
-# BPA12   3.433   6.438   9.877  10.753 22.580  4.567  4 0.335
-# BPA13   3.744   6.749  10.188  11.064 22.891  4.256  4 0.372
-
-DIF(DIF, which.par = c('a2'), items2test = 1:13)
+cor.test(MTurk_Val$BPA_AVG, MTurk_Val$GodinScored)
