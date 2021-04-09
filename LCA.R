@@ -94,6 +94,8 @@ URI_LCA_4class <- poLCA(lca_formula, data = uri_data, nclass = 4)
 URI_LCA_5class <- poLCA(lca_formula, data = uri_data, nclass = 5)
 URI_LCA_6class <- poLCA(lca_formula, data = uri_data, nclass = 6)
 
+URI_BICs <- cbind(URI_LCA_2class$bic,URI_LCA_3class$bic,
+                  URI_LCA_4class$bic,URI_LCA_5class$bic,URI_LCA_6class$bic)
 
 URI_lowest_BIC <- min(cbind(URI_LCA_2class$bic,URI_LCA_3class$bic,
                             URI_LCA_4class$bic,URI_LCA_5class$bic,URI_LCA_6class$bic))
@@ -214,6 +216,8 @@ mturk_LCA_4class <- poLCA(lca_formula, data = mturk_data, nclass = 4)
 mturk_LCA_5class <- poLCA(lca_formula, data = mturk_data, nclass = 5)
 mturk_LCA_6class <- poLCA(lca_formula, data = mturk_data, nclass = 6)
 
+mturk_BIC <- cbind(mturk_LCA_2class$bic,mturk_LCA_3class$bic,
+                   mturk_LCA_4class$bic,mturk_LCA_5class$bic,mturk_LCA_6class$bic)
 
 mturk_lowest_BIC <- min(cbind(mturk_LCA_2class$bic,mturk_LCA_3class$bic,
                             mturk_LCA_4class$bic,mturk_LCA_5class$bic,mturk_LCA_6class$bic))
@@ -336,10 +340,10 @@ plot(mturk_LCA_3class)
 ## GodinF
 ####
 
-URI_GodinF <- BPA_imp %>% dplyr::filter(URI1MTurk2 == 1) %>% dplyr::select(GodinF)
+URI_GodinF <- BPA_imp %>% dplyr::filter(URI1MTurk2 == 1) %>% dplyr::select(GodinF, BPA1:BPA13)
 URI_GodinF$URI_pred_classes <- URI_LCA_3class$predclass
 
-MTurk_GodinF <- BPA_imp %>% dplyr::filter(URI1MTurk2 == 2) %>% dplyr::select(GodinF)
+MTurk_GodinF <- BPA_imp %>% dplyr::filter(URI1MTurk2 == 2) %>% dplyr::select(GodinF, BPA1:BPA13)
 MTurk_GodinF$MTurk_pred_classes <- mturk_LCA_3class$predclass
 
 uri_validity <- aov(GodinF ~ as.factor(URI_pred_classes), data = URI_GodinF)
@@ -353,3 +357,130 @@ MTurk_validity <- aov(GodinF ~ as.factor(MTurk_pred_classes), data = MTurk_Godin
 summary(MTurk_validity)
 TukeyHSD(MTurk_validity)
 plot(TukeyHSD(MTurk_validity))
+
+
+URI_validity2 <- URI_GodinF %>% 
+  dplyr::mutate(BPA_Tot = BPA1 + BPA2 + BPA3 + BPA4 + BPA5 + BPA6 + BPA7 + BPA8 + BPA9 + BPA10 + BPA11 + BPA12 + BPA13)
+
+uri_validitym2 <- aov(BPA_Tot ~ as.factor(URI_pred_classes), data = URI_validity2)
+
+summary(uri_validitym2)
+TukeyHSD(uri_validitym2)
+plot(TukeyHSD(uri_validitym2))
+
+
+MTurk_validity2 <- MTurk_GodinF %>% 
+  dplyr::mutate(BPA_Tot = BPA1 + BPA2 + BPA3 + BPA4 + BPA5 + BPA6 + BPA7 + BPA8 + BPA9 + BPA10 + BPA11 + BPA12 + BPA13)
+
+MTurk_validitym2 <- aov(BPA_Tot ~ as.factor(MTurk_pred_classes), data = MTurk_validity2)
+
+summary(MTurk_validitym2)
+TukeyHSD(MTurk_validitym2)
+plot(TukeyHSD(MTurk_validitym2))
+
+
+
+####
+## GodinMET
+####
+
+# A problem here is not every participant answered the question correctly. There is no real way to quantify "I walk around 
+# campus every day" as a response.
+
+# Let's try handling this two ways -- first, omitting all these responses. Second, marking them as missing and imputing.
+# Ideally we'll get the same result when comparing the different predicted classes.
+
+# met_data1 <- FullData2 %>% 
+#   dplyr::select(URI1MTurk2, GodinL, GodinM, GodinS, GodinF) %>% 
+#   dplyr::mutate(GodinMET = GodinS*9 + GodinM*5 + GodinL*3,
+#                 GodinMET3cat = dplyr::if_else(GodinMET < 14, 0,
+#                                dplyr::if_else(GodinMET > 23, 3, 2)))
+# 
+# table(met_data1$GodinMET3cat)
+
+##########################################
+######## This was just too messy to work.
+##########################################
+
+####
+## Tables
+####
+
+gtsummary::tbl_summary(uri_data)
+gtsummary::tbl_summary(mturk_data)
+
+####
+## Demos by LC
+####
+
+DemosData <- FullData %>% 
+  dplyr::select(URI1MTurk2, Gender1F2M, RaceEth, Age,
+                RelStaCat, StartPALast6MoY1N0, RegularlyActiveY1N0) %>% 
+  dplyr::mutate(RaceEth_4Cat = dplyr::if_else(RaceEth == 1, 1,
+                               dplyr::if_else(RaceEth == 2, 2,
+                               dplyr::if_else(RaceEth == 3, 3, 4))),
+                RelSta_2Cat = dplyr::if_else(RelStaCat == 1, 1, 2))
+
+
+## Adding Labels
+
+DemosData$Gender1F2M <- factor(DemosData$Gender1F2M, levels = c(1, 2),
+                               labels = c("Female", "Male"))
+
+DemosData$RaceEth <- factor(DemosData$RaceEth, levels = c(1:8),
+                            labels = c("White", "Black", "Hispanic", "Native American/Alaska Native",
+                                       "Asian", "Indian/Pacific Islander", "Multiracial", "Other"))
+
+DemosData$RaceEth_4Cat <- factor(DemosData$RaceEth_4Cat, levels = c(1:4),
+                            labels = c("White", "Black", "Hispanic", "Other"))
+
+DemosData$RelStaCat <- factor(DemosData$RelStaCat, levels = c(1, 2, 3),
+                              labels = c("Single", "In a Relationship", "Married"))
+
+DemosData$RelSta_2Cat <- factor(DemosData$RelSta_2Cat, levels = c(1, 2),
+                              labels = c("Single", "In a Relationship"))
+
+
+DemosData$StartPALast6MoY1N0 <- factor(DemosData$StartPALast6MoY1N0, levels = c(0, 1),
+                               labels = c("No", "Yes"))
+
+DemosData$RegularlyActiveY1N0 <- factor(DemosData$RegularlyActiveY1N0, levels = c(0, 1),
+                                       labels = c("No", "Yes"))
+
+DemosData$Age <- as.numeric(DemosData$Age)
+
+URIDemos <- DemosData %>% 
+  dplyr::filter(URI1MTurk2 == 1)
+
+MTurkDemos <- DemosData %>% 
+  dplyr::filter(URI1MTurk2 == 2)
+
+URIDemos$URI_pred_classes <- factor(URI_LCA_3class$predclass, levels = c(1:3),
+                                    labels = c("Moderate Barriers", "Few Barriers", "Many Barriers"))
+MTurkDemos$MTurk_pred_classes <- factor(mturk_LCA_3class$predclass, levels = c(1:3),
+                                        labels = c("Many Barriers", "Few Barriers", "Moderate Barriers"))
+
+
+uridemos <- URIDemos %>% 
+  dplyr::select(-URI1MTurk2, -RaceEth, -RelStaCat) %>% 
+  gtsummary::tbl_summary(by = URI_pred_classes,
+                         statistic = list(all_continuous() ~ "{mean} ({sd})",
+                                           all_categorical() ~ "{n} ({p}%)"),
+                         digits = all_continuous() ~ 2,
+                         missing_text = "Chose not to respond") %>% 
+  add_overall() %>% 
+  add_p(test = list(all_categorical() ~ "chisq.test",
+                    all_continuous() ~ "aov")) %>% 
+  as_kable()
+  
+mturkdemos <- MTurkDemos %>% 
+  dplyr::select(-URI1MTurk2, -RaceEth, -RelStaCat) %>% 
+  gtsummary::tbl_summary(by = MTurk_pred_classes,
+                         statistic = list(all_continuous() ~ "{mean} ({sd})",
+                                          all_categorical() ~ "{n} ({p}%)"),
+                         digits = all_continuous() ~ 2,
+                         missing_text = "Chose not to respond") %>% 
+  add_overall() %>% 
+  add_p(test = list(all_categorical() ~ "chisq.test",
+                    all_continuous() ~ "aov")) %>% 
+  as_kable()
